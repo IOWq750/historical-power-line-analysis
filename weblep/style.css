@@ -1,0 +1,53 @@
+body {
+  margin: 0;
+  font-family: Tahoma, Verdana, Geneva, sans-serif;
+}
+#mapid {
+  height: 100vh;
+}
+#yearcontrol {
+  text-align: center;
+  position: absolute;
+  bottom: 0px;
+  z-index: 401;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(240, 248, 255, 0.4);
+}
+#yearrange {
+  width: 600px;
+  margin: 0 10px 30px 10px;
+}
+
+/* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+#yearrange::-webkit-slider-thumb {
+  cursor: pointer;
+}
+#yearrange::-webkit-slider-runnable-track {
+  cursor: pointer;
+}
+#yearrange::-moz-range-track {
+  cursor: pointer;
+}
+#yearrange::-moz-range-thumb {
+  cursor: pointer;
+}
+
+#legend {
+  position: absolute;
+  bottom: 50%;
+  transform: translateY(50%);
+  left: 0;
+  z-index: 400;
+}
+
+#legend > object {
+  height: 70vh;
+  background-color: rgba(240, 248, 255, 0.8);
+}
+
+@media screen and (max-width: 786px) {
+  #yearrange {
+    width: 90%;
+  }
+}
