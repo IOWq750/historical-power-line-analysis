@@ -273,15 +273,16 @@ def get_morphological_modifications(year, initial_data, out):
     arcpy.CalculateField_management(selected_lines_lyr, 'Segment_Type', '"Voltage modification"')
     arcpy.SelectLayerByAttribute_management(dismantled_lines_lyr, "CLEAR_SELECTION")
 
+folder = 'BackUp230128'
 
-arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\BackUp230109\MES_Evolution.gdb'
+arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
 arcpy.env.overwriteOutput = True
-initial_data = r'F:\YandexDisk\Projects\MES_evolution\BackUp230109\MES_Evolution.gdb'
-out = r'F:\YandexDisk\Projects\MES_evolution\BackUp230109\MES_Queries.gdb'
-modifications = r'F:\YandexDisk\Projects\MES_evolution\BackUp230109\MES_Modifications.gdb'
-#relation_redundancy_decrease(r'F:\YandexDisk\Projects\MES_evolution\BackUp230109\MES_Evolution.gdb\PL', modifications)
+initial_data = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
+out = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Queries.gdb'.format(folder)
+modifications = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Modifications.gdb'.format(folder)
+#relation_redundancy_decrease(r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb\PL', modifications).format(folder)
 arcpy.env.workspace = modifications
 #voltage_modification("PL_Spat_Time", "PL_Attributes")
-for i in range(1978, 2023):
+for i in range(1933, 2023):
     get_morphological_modifications(i, modifications, modifications)
     print(i)

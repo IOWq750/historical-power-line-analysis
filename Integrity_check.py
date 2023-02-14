@@ -6,7 +6,9 @@ import os
 import nx_multi_shp as nxm
 sys.setdefaultencoding('utf8')
 
-arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\BackUp230103\SHP'
+
+folder = 'BackUp230201'
+arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder)
 arcpy.env.overwriteOutput = True
 
 
@@ -35,10 +37,10 @@ def line_connectedness(lines, out, year):
         print('{0} line(s) with disconnected segments in {1}'.format(len(disconnected_lines), year))
 
 
-os.chdir(r'F:\YandexDisk\Projects\MES_evolution\BackUp230103\SHP')
+os.chdir(r'F:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder))
 # for i in range(1965, 1966): #range(1936, 1937):
 #     count_dangles('T{0}_lines'.format(i), i)
 #     print(i)
 
 for i in range(2021, 2023):
-    line_connectedness('TL_{0}.shp'.format(i), 'F:\YandexDisk\Projects\MES_evolution\BackUp230103\Components', i)
+    line_connectedness('TL_{0}.shp'.format(i), 'F:\YandexDisk\Projects\MES_evolution\{0}\Components'.format(folder), i)

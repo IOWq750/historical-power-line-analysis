@@ -6,9 +6,6 @@ import nx_multi_shp as nxm
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\BackUp230103\MES_Queries.gdb'
-arcpy.env.overwriteOutput = True
-
 
 def coordinates_replacement(geometry, part_number, old_coords, new_coords, vertices_array):
     for v in geometry.getPart(part_number):
@@ -168,33 +165,23 @@ def del_empty_name_feature(KVL_Dissolve):
             rows.deleteRow()
     del rows, row
 
+folder = 'BackUp230201'
+arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Queries.gdb'.format(folder)
+arcpy.env.overwriteOutput = True
 
-for i in range(1973, 2023):
+for i in range(2005, 2021):
     print(i)
     lines = 'L_{0}'.format(i)
     points = 'P_{0}'.format(i)
-    snapping_dangles(lines, points, 1000)
+    snapping_dangles(lines, points, 2000)
     delete_dangles(lines, points, i)
     delete_loops(lines, i)
     set_edge_weight(lines)
     del_empty_name_feature(lines)
     arcpy.FeatureClassToFeatureClass_conversion(lines,
-                                                r'F:\YandexDisk\Projects\MES_evolution\BackUp230103\SHP', 'TL_{0}.shp'.format(i))
-    os.chdir(r'F:\YandexDisk\Projects\MES_evolution\BackUp230103\SHP')
+                                                r'F:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder), 'TL_{0}.shp'.format(i))
+    os.chdir(r'F:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder))
     G = nxm.read_shp('TL_{0}.shp'.format(i), 'Name').to_undirected()
     print('network in {0} has {1} connected components'.format(i, nx.number_connected_components(G)))
 
-# arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\BackUp230103\SHP'
-# for i in range(1933, 2023):
-#     print(i)
-#     rows = arcpy.da.UpdateCursor('Points_{0}.shp'.format(i), ['Voltage', 'Type'])
-#     for row in rows:
-#         if row[0] == 0:
-#             row[1] = 'Электростанция'
-#         else:
-#             row[1] = 'Подстанция'
-#         rows.updateRow(row)
-#     del row, rows
-#     gen = arcpy.MakeFeatureLayer_management('Points_{0}.shp'.format(i), r'F:\YandexDisk\Projects\MES_evolution\BackUp230103\SHP', where_clause="Type = 'Электростанция'")
-#     arcpy.FeatureClassToFeatureClass_conversion(gen, 'Generation', 'Generation_{0}.shp'.format(i))
 

@@ -44,7 +44,6 @@ def el_centrality(power_lines, power_points, name, weight, voltage, output_works
     for node_p in nodes_from_points:
         try:
             dict_point_type[node_p] = t1[node_p]
-            print('ok')
         except:
             print('No such a node with ccordinates {}'.format(node_p))
     nx.set_node_attributes(G_network, dict_point_type, 'Type')
@@ -53,10 +52,9 @@ def el_centrality(power_lines, power_points, name, weight, voltage, output_works
     node_dict = nx.get_node_attributes(G_network, 'Type')
     for node in nodes_from_network:
         if node in node_dict:
-            if node_dict[node] == 'Электростанция' or node_dict[node] == 'Р­Р»РµРєС‚СЂРѕСЃС‚Р°РЅС†РёСЏ':
+            if node_dict[node] in ['Р­РЎ', 'РџРЎ', 'ЭС', 'РУ']:
                 generation.add(node)
     generation_count = len(generation)
-    print(generation_count)
     substation_count = number_nodes - generation_count
     G_network, trace_dict = trace_lines(G_network, voltage)
     shortest_path = nx.multi_source_dijkstra_path(G_network, generation, weight=weight)

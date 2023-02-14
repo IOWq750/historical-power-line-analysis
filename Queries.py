@@ -17,12 +17,13 @@ def get_year_state_points(points, year, output_workspace):
     clause = "Year_start <= {0} AND (Year_end IS NULL OR Year_end > {0})".format(year)
     arcpy.FeatureClassToFeatureClass_conversion(points, output_workspace, 'P_{0}'.format(year), clause)
 
+folder = 'BackUp230201'
 
-arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\BackUp230109\MES_Evolution.gdb'
+arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
 arcpy.env.overwriteOutput = True
-initial_data = r'F:\YandexDisk\Projects\MES_evolution\BackUp230109\MES_Evolution.gdb'
-out = r'F:\YandexDisk\Projects\MES_evolution\BackUp230109\MES_Queries.gdb'
-for i in range(1933, 2021):
+initial_data = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
+out = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Queries.gdb'.format(folder)
+for i in range(1933, 2023):
     get_year_state_lines('PL', i, out)
     get_year_state_points('Merge_Substations_Generation', i, out)
     print(i)

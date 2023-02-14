@@ -162,10 +162,10 @@ def create_cpg(shapefile):
     with open('{}.cpg'.format(shapefile), 'w') as cpg:
         cpg.write('cp1251')
 
-
-os.chdir(r'F:\YandexDisk\Projects\MES_evolution\ALL')
-# for i in range(1936, 2021):
-#     G = convert_shp_to_graph('T{0}_lines.shp'.format(i), 'false', 'true', 'Name')
+folder = 'BackUp230201'
+os.chdir(r'F:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder))
+# for i in range(1933, 2021):
+#     G = convert_shp_to_graph('TL_{0}.shp'.format(i), 'false', 'true', 'Name')
 #     normalization = True
 #     node_betweenness_centrality(G, normalization, 'Weight')
 #     ebc = edge_betweenness_centrality(G, normalization, 'Weight')
@@ -180,10 +180,10 @@ os.chdir(r'F:\YandexDisk\Projects\MES_evolution\ALL')
 #     create_cpg(r'BC_Output\{0}_BC\nodes'.format(i))
 
 # Calculation of electrical network centrality
-for i in range(2020, 2021):
+for i in range(1933, 2021):
     print(i)
-    power_lines = r'T{0}_lines.shp'.format(i)
-    power_points = r'Points_{0}.shp'.format(i)
+    power_lines = r'TL_{0}.shp'.format(i)
+    power_points = r'P_{0}.shp'.format(i)
     path_output = 'EC'
 
     output_shp = os.path.join(path_output, 'el_centrality_{0}.shp'.format(i))
