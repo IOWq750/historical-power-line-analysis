@@ -5,7 +5,7 @@ import os
 
 def unique_values(table, field):
     with arcpy.da.SearchCursor(table, [field]) as cursor:
-        return sorted({row[0] for row in cursor})
+        return sorted({row[0] for row in cursor if row[0] is not None})
 
 
 def relation_redundancy_decrease(lines, out):
@@ -43,9 +43,10 @@ def voltage_modification(lines, line_attrs):
             if len(voltages) == 2:  # Only two unique values of voltage is possible
                 print(id)
                 mod_dict = {}
-                with arcpy.da.SearchCursor(attributes, ['Year_start_name', 'Voltage']) as rows:
+                with arcpy.da.SearchCursor(attributes, ['Year_start_name', 'Voltage', 'Name']) as rows:
                     for row in rows:
                         mod_dict[row[0]] = row[1]
+                        line_name = row[2]
                 first_voltage = mod_dict[years_start[0]]
                 i = 0
                 while mod_dict[years_start[i]] == first_voltage:
@@ -53,7 +54,7 @@ def voltage_modification(lines, line_attrs):
                         i += 1
                 else:
                     year_of_voltage_mod = years_start[i]
-                    print("Year of modification ", years_start[i])
+                    print("Voltage modification of {0} in {1}".format(line_name, years_start[i]))
                 with arcpy.da.UpdateCursor(attributes, ['Year_start_name', 'Modification']) as rows2:
                     for row in rows2:
                         # Second condition for cases when there is a time gap between
@@ -86,8 +87,8 @@ def get_morphological_modifications(year, initial_data, out):
     """"Constructing a layer for power lines segment modifications for the certain year"""
     arcpy.env.workspace = out
     arcpy.env.overwriteOutput = True
-    geom = os.path.join(initial_data, 'PL_Spat_Time')
-    attrs = os.path.join(initial_data, 'PL_Attributes')
+    geom = os.path.join(out, 'PL_Spat_Time')
+    attrs = os.path.join(out, 'PL_Attributes')
     lines = arcpy.Copy_management(attrs, 'PL')
     arcpy.JoinField_management(lines, "TARGET_FID", geom, 'fid')
     branch_points = os.path.join(initial_data, 'Branch_Point')
@@ -119,7 +120,7 @@ def get_morphological_modifications(year, initial_data, out):
                                            "LIST", ['Name', 'Voltage', 'Start', 'End', 'Dissolution', 'Circuit'])
     dissolved_buffer_single = arcpy.MultipartToSinglepart_management(dissolved_buffer, "Dissolved_buffer_single")
     arcpy.AddField_management(dissolved_buffer_single, 'MULTIPART_ID', 'SHORT')
-    arcpy.CalculateField_management(dissolved_buffer_single, 'MULTIPART_ID', '[OBJECTID]')
+    arcpy.CalculateField_management(dissolved_buffer_single, 'MULTIPART_ID', "!OBJECTID!", "PYTHON3")
     dissolved_lines = arcpy.SpatialJoin_analysis(dissolved_lines_single, dissolved_buffer_single,
                                                  'modification_lines_{0}'.format(year), 'JOIN_ONE_TO_MANY',
                                                    field_mapping='{3} "{3}" true true false 4 Long 0 0 ,First,#,{0},{3}'
@@ -273,16 +274,18 @@ def get_morphological_modifications(year, initial_data, out):
     arcpy.CalculateField_management(selected_lines_lyr, 'Segment_Type', '"Voltage modification"')
     arcpy.SelectLayerByAttribute_management(dismantled_lines_lyr, "CLEAR_SELECTION")
 
-folder = 'BackUp230128'
+folder = 'BackUp230917'
 
-arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
+arcpy.env.workspace = r'D:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
 arcpy.env.overwriteOutput = True
-initial_data = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
-out = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Queries.gdb'.format(folder)
-modifications = r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Modifications.gdb'.format(folder)
-#relation_redundancy_decrease(r'F:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb\PL', modifications).format(folder)
+initial_data = r'D:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
+out = r'D:\YandexDisk\Projects\MES_evolution\{0}\MES_Queries.gdb'.format(folder)
+modifications = r'D:\YandexDisk\Projects\MES_evolution\{0}\MES_Modifications.gdb'.format(folder)
+# Считается один раз
+relation_redundancy_decrease(r'D:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb\PL'.format(folder), modifications)
 arcpy.env.workspace = modifications
-#voltage_modification("PL_Spat_Time", "PL_Attributes")
+# Считается один раз
+voltage_modification("PL_Spat_Time", "PL_Attributes")
 for i in range(1933, 2023):
-    get_morphological_modifications(i, modifications, modifications)
+    get_morphological_modifications(i, initial_data, modifications)
     print(i)

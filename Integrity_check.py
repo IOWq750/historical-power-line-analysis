@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 import arcpy, sys
-reload(sys)
 import networkx as nx
 import os
 import nx_multi_shp as nxm
-sys.setdefaultencoding('utf8')
 
 
-folder = 'BackUp230201'
-arcpy.env.workspace = r'F:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder)
+folder = 'BackUp230917'
+arcpy.env.workspace = r'D:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder)
 arcpy.env.overwriteOutput = True
 
 
@@ -24,7 +22,6 @@ def line_connectedness(lines, out, year):
     print(year)
     disconnected_lines = []
     for line in sorted(list(set(row[0] for row in arcpy.da.SearchCursor(lines, "Name")))):
-        #print(line)
         selection = arcpy.MakeFeatureLayer_management(lines, "Selected_line", "Name = '{0}'".format(line))
         arcpy.FeatureClassToFeatureClass_conversion(selection, out, 'Line.shp')
         os.chdir(out)
@@ -33,14 +30,21 @@ def line_connectedness(lines, out, year):
             disconnected_lines.append(line)
             print(line)
             print(" has {} components".format(nx.number_connected_components(G)))
+            with open('integrity.txt', 'a') as the_file:
+                the_file.write('{0}\n'.format(line))
+                #the_file.write(" has {} components".format(nx.number_connected_components(G)))
     if len(disconnected_lines) > 0:
         print('{0} line(s) with disconnected segments in {1}'.format(len(disconnected_lines), year))
+        with open('integrity.txt', 'a') as the_file:
+            the_file.write('{0} line(s) with disconnected segments in {1}'.format(len(disconnected_lines), year))
 
 
-os.chdir(r'F:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder))
+
+os.chdir(r'D:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder))
 # for i in range(1965, 1966): #range(1936, 1937):
 #     count_dangles('T{0}_lines'.format(i), i)
 #     print(i)
 
-for i in range(2021, 2023):
-    line_connectedness('TL_{0}.shp'.format(i), 'F:\YandexDisk\Projects\MES_evolution\{0}\Components'.format(folder), i)
+for i in range(1933, 2023):
+    line_connectedness('L_{0}.shp'.format(i), r'D:\YandexDisk\Projects\MES_evolution\{0}\Components'.format(folder), i)
+
