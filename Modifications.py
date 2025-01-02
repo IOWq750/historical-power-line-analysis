@@ -273,8 +273,10 @@ def get_morphological_modifications(year, initial_data, out):
                                             "Dissolution = 'Modify'")
     arcpy.CalculateField_management(selected_lines_lyr, 'Segment_Type', '"Voltage modification"')
     arcpy.SelectLayerByAttribute_management(dismantled_lines_lyr, "CLEAR_SELECTION")
+    arcpy.AddField_management(dissolved_lines, 'Year', 'SHORT')
+    arcpy.CalculateField_management(dissolved_lines, 'Year', year)
 
-folder = 'BackUp230917'
+folder = 'BackUp241212'
 
 arcpy.env.workspace = r'D:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
 arcpy.env.overwriteOutput = True
@@ -289,3 +291,5 @@ voltage_modification("PL_Spat_Time", "PL_Attributes")
 for i in range(1933, 2023):
     get_morphological_modifications(i, initial_data, modifications)
     print(i)
+arcpy.Merge_management(['modification_lines_{0}'.format(year) for year in range(1933, 2023)], 'modification_lines')
+

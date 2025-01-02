@@ -53,7 +53,7 @@ def check_point_name_consistency():
         if branch[3] not in point_names:
             print('Branch end name is not in point list in {0}'.format(branch[0]))
 
-folder = 'BackUp230917'
+folder = 'BackUp240624'
 arcpy.env.workspace = r'D:\YandexDisk\Projects\MES_evolution\{0}\MES_Evolution.gdb'.format(folder)
 arcpy.env.overwriteOutput = True
 

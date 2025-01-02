@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-import arcpy, sys
+import arcpy
 import networkx as nx
 import os
 import nx_multi_shp as nxm
-import logging
-import time
 
 def coordinates_replacement(geometry, part_number, old_coords, new_coords, vertices_array):
     for v in geometry.getPart(part_number):
@@ -41,56 +39,8 @@ def unique_values(table, field):
         return sorted({row[0] for row in cursor if row[0] is not None})
 
 
-def selecting_dangles(point_layer, oid, dangle_selection, snap_radius, point_name):
-    point_selected = arcpy.SelectLayerByAttribute_management(point_layer, "NEW_SELECTION",
-                                                             "OBJECTID = {0}".format(oid))
-    dangle_snap_selection = arcpy.SelectLayerByLocation_management(dangle_selection, "WITHIN_A_DISTANCE",
-                                                                   select_features=point_selected,
-                                                                   search_distance="{0} Meters".format(
-                                                                       snap_radius),
-                                                                   selection_type="NEW_SELECTION")
-    #print(point_name)
-    # Selection of the dangle point with the corresponding start, end or branch end
-    expression = "Start = '{0}' OR End = '{0}' OR Branch_points LIKE '%{0}%'".format(point_name)
-    #print(expression)
-    dangle_name_selection = arcpy.SelectLayerByAttribute_management(dangle_snap_selection, "SUBSET_SELECTION",
-                                                                    expression)
-    return point_selected, dangle_name_selection
-
-
-# Snapping selected feature layers of dangles to the selected points
-def snapping_dangles(point_layer, dangle_selection, snap_radius, alt_name_dict, line_layer):
-        counter = 0
-        for point in arcpy.da.SearchCursor(point_layer, ["OBJECTID", "Name", "Alternative_name", "Type"]):
-            point_selected, dangle_name_selection = selecting_dangles(point_layer, point[0], dangle_selection, snap_radius,
-                                                      alt_name_dict[point[1]])
-            # For cases when the end point type of 'РУ' for generation point, but it is represented as a substation
-            if point[3] == "РУ" and 'РУ' not in point[1]:
-                print(point[1], "Alternative to Generation")
-                dangle_name_selection = selecting_dangles(point_layer, point[0], dangle_selection, snap_radius, point[1])
-            if int(str(arcpy.GetCount_management(dangle_name_selection))) == 1:
-                # Dangle corresponds to the point
-                point_selected = arcpy.SelectLayerByAttribute_management(point_layer, "NEW_SELECTION",
-                                                                               "OBJECTID = {0}".format(point[0]))
-                edit_geometry(line_layer, point_selected, dangle_name_selection)
-                counter += 1
-            elif int(str(arcpy.GetCount_management(dangle_name_selection))) > 1:
-                # If there are several options for snapping within the radius with the same name
-                near = arcpy.GenerateNearTable_analysis(point_selected, dangle_name_selection, "near",
-                                                            '{0} Meters'.format(snap_radius))
-                min_dist = min([i[0] for i in arcpy.da.SearchCursor(near, ['NEAR_DIST'])])
-                for row in arcpy.da.SearchCursor(near, ['NEAR_FID', 'NEAR_DIST']):
-                    if row[1] == min_dist:
-                        one_dangle_selection = arcpy.SelectLayerByAttribute_management(dangle_name_selection,
-                                                                                           "SUBSET_SELECTION",
-                                                                                           "OBJECTID= {0}".format(row[0]))
-                        edit_geometry(line_layer, point_selected, one_dangle_selection)
-                        counter += 1
-        return counter
-
-
 # Creating dictionary of names and alternative names for future selection
-def create_name_dict(line_class, point_class):
+def create_name_dict(line_class, point_class, exclusion_dict):
     lines = arcpy.da.SearchCursor(line_class, ["OBJECTID", "Name", "Start", "End", "Branch_points", "Voltage_str"])
     alt_name_dict = {}
     unique_alt_names = unique_values(point_class, 'Alternative_name')
@@ -111,7 +61,28 @@ def create_name_dict(line_class, point_class):
             for name in name_list:
                 if name not in alt_name_dict:
                     alt_name_dict[name] = name
+    for element in alt_name_dict:
+        if element in exclusion_dict:
+            alt_name_dict[element] = element
+    # print(alt_name_dict)
     return alt_name_dict
+
+
+def selecting_dangles(point_layer, oid, dangle_selection, snap_radius, point_name):
+    point_selected = arcpy.SelectLayerByAttribute_management(point_layer, "NEW_SELECTION",
+                                                             "OBJECTID = {0}".format(oid))
+    dangle_snap_selection = arcpy.SelectLayerByLocation_management(dangle_selection, "WITHIN_A_DISTANCE",
+                                                                   select_features=point_selected,
+                                                                   search_distance="{0} Meters".format(
+                                                                       snap_radius),
+                                                                   selection_type="NEW_SELECTION")
+    #print(point_name)
+    # Selection of the dangle point with the corresponding start, end or branch end
+    expression = "Start = '{0}' OR End = '{0}' OR Branch_points LIKE '%{0}%'".format(point_name)
+    #print(expression)
+    dangle_name_selection = arcpy.SelectLayerByAttribute_management(dangle_snap_selection, "SUBSET_SELECTION",
+                                                                    expression)
+    return point_selected, dangle_name_selection
 
 
 # Selecting appropriate points for each dangle using dictionary of names and attribute fields in dangles
@@ -139,7 +110,7 @@ def selecting_points(KVL_dissolve, input_points_p, snap_radius, year):
         """
     dangle_points = arcpy.FeatureVerticesToPoints_management(KVL_dissolve, 'Dangles', 'DANGLE')
     lines_search = arcpy.da.SearchCursor(KVL_dissolve, ["OBJECTID", "Name", "Start", "End", "Branch_points", "Voltage_str"])
-    alt_name_dict = create_name_dict(KVL_dissolve, input_points_p)
+    alt_name_dict = create_name_dict(KVL_dissolve, input_points_p, exclusion_dict)
     for line in lines_search:
         #print(line[1])
         line_layer = arcpy.MakeFeatureLayer_management(KVL_dissolve, "Selected_line_{0}".format(year),
@@ -163,6 +134,33 @@ def selecting_points(KVL_dissolve, input_points_p, snap_radius, year):
         ends_amount = len(point_name_list)
         if counter < ends_amount and line[5] != '110':
             print("{0} dangle(s) is(are) not snapped in line {1} in {2}".format(ends_amount - counter, line[1], year))
+
+
+# Snapping selected feature layers of dangles to the selected points
+def snapping_dangles(point_layer, dangle_selection, snap_radius, alt_name_dict, line_layer):
+        counter = 0
+        for point in arcpy.da.SearchCursor(point_layer, ["OBJECTID", "Name", "Alternative_name", "Type"]):
+            point_selected, dangle_name_selection = selecting_dangles(point_layer, point[0], dangle_selection, snap_radius,
+                                                      alt_name_dict[point[1]])
+            if int(str(arcpy.GetCount_management(dangle_name_selection))) == 1:
+                # Dangle corresponds to the point
+                point_selected = arcpy.SelectLayerByAttribute_management(point_layer, "NEW_SELECTION",
+                                                                               "OBJECTID = {0}".format(point[0]))
+                edit_geometry(line_layer, point_selected, dangle_name_selection)
+                counter += 1
+            elif int(str(arcpy.GetCount_management(dangle_name_selection))) > 1:
+                # If there are several options for snapping within the radius with the same name
+                near = arcpy.GenerateNearTable_analysis(point_selected, dangle_name_selection, "near",
+                                                            '{0} Meters'.format(snap_radius))
+                min_dist = min([i[0] for i in arcpy.da.SearchCursor(near, ['NEAR_DIST'])])
+                for row in arcpy.da.SearchCursor(near, ['NEAR_FID', 'NEAR_DIST']):
+                    if row[1] == min_dist:
+                        one_dangle_selection = arcpy.SelectLayerByAttribute_management(dangle_name_selection,
+                                                                                           "SUBSET_SELECTION",
+                                                                                           "OBJECTID= {0}".format(row[0]))
+                        edit_geometry(line_layer, point_selected, one_dangle_selection)
+                        counter += 1
+        return counter
 
 
 # Deleting loops
@@ -229,14 +227,17 @@ def del_empty_name_feature(KVL_Dissolve):
     del rows, row
 
 
-folder = 'BackUp231016'
+folder = 'BackUp241106'
 arcpy.env.workspace = r'D:\YandexDisk\Projects\MES_evolution\{0}\MES_Queries.gdb'.format(folder)
 arcpy.env.overwriteOutput = True
+# Exclusions for distribution devices of some generation points which are represented as substations
+exclusion_dict = {'Курчатовская': 'Курчатовская',
+                  'Копорская': 'Копорская'}
 
-for i in range(2002, 2023):
+for i in range(1933, 2023):
     print(i)
     lines = 'L_{0}'.format(i)
-    points = 'P_{0}'.format(i)
+    points = 'P_{0}'.format( i)
     selecting_points(lines, points, 2000, i)
     delete_dangles(lines, points, i)
     delete_loops(lines, i)

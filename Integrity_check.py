@@ -5,7 +5,7 @@ import os
 import nx_multi_shp as nxm
 
 
-folder = 'BackUp230917'
+folder = 'BackUp241106'
 arcpy.env.workspace = r'D:\YandexDisk\Projects\MES_evolution\{0}\SHP'.format(folder)
 arcpy.env.overwriteOutput = True
 
